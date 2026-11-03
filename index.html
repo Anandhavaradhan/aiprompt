@@ -1,0 +1,2099 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PromptVault — Cloud Prompt Engineering Library</title>
+    <meta
+      name="description"
+      content="Simple, elegant square-grid prompt library backed by Firebase Firestore with one-click copy, search, edit, delete, and auto-naming."
+    />
+    <meta property="og:title" content="PromptVault — Cloud Prompt Engineering Library" />
+    <meta
+      property="og:description"
+      content="Simple, elegant square-grid prompt library backed by Firebase Firestore with one-click copy, search, edit, delete, and auto-naming."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-canvas: #faf9f6;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #94a3b8;
+        --border-subtle: #e2e8f0;
+        --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-display: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--bg-canvas);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font-family: inherit;
+      }
+
+      .pv-app {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header */
+      .pv-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(250, 249, 246, 0.92);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+      }
+
+      .pv-header-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        height: 4rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .pv-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .pv-logo {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.5rem;
+        background: #0f172a;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 0.875rem;
+        letter-spacing: -0.02em;
+      }
+
+      .pv-brand-title {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.125rem;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+      }
+
+      .pv-brand-sub {
+        margin-left: 0.625rem;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+
+      .pv-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+      }
+
+      .pv-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.45rem 0.85rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .pv-btn-outline {
+        background: #ffffff;
+        color: #334155;
+        border-color: #e2e8f0;
+      }
+
+      .pv-btn-outline:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #0f172a;
+      }
+
+      .pv-btn-primary {
+        background: #0f172a;
+        color: #ffffff;
+      }
+
+      .pv-btn-primary:hover {
+        background: #1e293b;
+      }
+
+      .pv-btn-primary:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .pv-sync-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #047857;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        padding: 0.375rem 0.65rem;
+        border-radius: 0.5rem;
+      }
+
+      /* Main Layout */
+      .pv-main {
+        flex: 1;
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 2rem 2rem 5rem;
+      }
+
+      /* Search Section */
+      .pv-search-section {
+        max-width: 48rem;
+        margin: 0 auto 2.5rem;
+      }
+
+      .pv-search-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+        transition: all 0.15s ease;
+      }
+
+      .pv-search-box:focus-within {
+        border-color: #0f172a;
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.05);
+      }
+
+      .pv-search-icon {
+        margin-left: 1rem;
+        color: #94a3b8;
+        flex-shrink: 0;
+        display: flex;
+      }
+
+      .pv-search-input {
+        width: 100%;
+        padding: 1rem 0.75rem;
+        border: none;
+        background: transparent;
+        font-size: 0.95rem;
+        color: #0f172a;
+        outline: none;
+      }
+
+      .pv-search-input::placeholder {
+        color: #94a3b8;
+      }
+
+      .pv-clear-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 0.375rem;
+        margin-right: 0.25rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        display: flex;
+      }
+
+      .pv-clear-btn:hover {
+        color: #334155;
+        background: #f1f5f9;
+      }
+
+      .pv-gemini-btn {
+        margin-right: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.5rem 0.875rem;
+        border-radius: 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #0f172a;
+        color: #ffffff;
+        border: none;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.15s ease;
+      }
+
+      .pv-gemini-btn:hover:not(:disabled) {
+        background: #2563eb;
+      }
+
+      .pv-gemini-btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      /* Filter Bar */
+      .pv-filter-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding: 0 0.25rem;
+      }
+
+      .pv-categories {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+      }
+
+      .pv-cat-btn {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .pv-cat-btn:hover {
+        color: #0f172a;
+        background: rgba(226, 232, 240, 0.5);
+      }
+
+      .pv-cat-btn.active {
+        background: #0f172a;
+        color: #ffffff;
+      }
+
+      .pv-square-count {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: #94a3b8;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .pv-banner {
+        margin-top: 0.75rem;
+        padding: 0.55rem 0.875rem;
+        border-radius: 0.75rem;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .pv-banner-info {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e3a8a;
+      }
+
+      .pv-banner-warn {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #78350f;
+      }
+
+      /* Square Grid */
+      .pv-grid {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 1.25rem;
+      }
+
+      @media (min-width: 640px) {
+        .pv-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 768px) {
+        .pv-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .pv-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+
+      .pv-square {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-align: left;
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        cursor: pointer;
+        user-select: none;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease,
+          background-color 0.18s ease;
+      }
+
+      .pv-square:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.07);
+        border-color: #94a3b8;
+      }
+
+      .pv-square.copied {
+        background: #022c22;
+        color: #ffffff;
+        border-color: #059669;
+        box-shadow: 0 8px 20px -4px rgba(5, 150, 105, 0.25);
+        transform: translateY(-2px);
+      }
+
+      .pv-square-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .pv-square-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-width: 0;
+      }
+
+      .pv-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 9999px;
+        flex-shrink: 0;
+      }
+
+      .pv-cat-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .pv-square.copied .pv-cat-label {
+        color: #6ee7b7;
+      }
+
+      .pv-pinned-label {
+        font-size: 0.6875rem;
+        color: #d97706;
+        font-weight: 500;
+      }
+
+      .pv-square.copied .pv-pinned-label {
+        color: #6ee7b7;
+      }
+
+      .pv-square-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        flex-shrink: 0;
+      }
+
+      .pv-square.copied .pv-square-actions {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .pv-icon-btn {
+        padding: 0.35rem;
+        border-radius: 0.45rem;
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+      }
+
+      .pv-icon-btn:hover {
+        color: #0f172a;
+        background: #f1f5f9;
+      }
+
+      .pv-icon-btn.pinned {
+        color: #d97706;
+      }
+
+      .pv-icon-btn.pinned:hover {
+        background: #fffbeb;
+      }
+
+      .pv-icon-btn.delete:hover {
+        color: #dc2626;
+        background: #fef2f2;
+      }
+
+      .pv-confirm-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 0.5rem;
+        padding: 0.15rem 0.35rem;
+      }
+
+      .pv-confirm-del-btn {
+        background: #dc2626;
+        color: #ffffff;
+        border: none;
+        border-radius: 0.25rem;
+        padding: 0.15rem 0.4rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .pv-confirm-cancel-btn {
+        background: transparent;
+        color: #64748b;
+        border: none;
+        padding: 0.1rem 0.25rem;
+        cursor: pointer;
+        font-size: 0.75rem;
+      }
+
+      .pv-square-center {
+        margin: auto 0;
+        padding: 0.5rem 0;
+      }
+
+      .pv-square-heading {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.35rem;
+        line-height: 1.28;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .pv-square.copied .pv-square-heading {
+        color: #ffffff;
+      }
+
+      .pv-square-preview {
+        margin-top: 0.625rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        line-height: 1.5;
+        color: #94a3b8;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .pv-square.copied .pv-square-preview {
+        color: rgba(167, 243, 208, 0.9);
+      }
+
+      .pv-square-reason {
+        margin-top: 0.625rem;
+        font-size: 0.75rem;
+        line-height: 1.45;
+        color: #1d4ed8;
+        font-weight: 500;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .pv-square-bottom {
+        padding-top: 0.75rem;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: #94a3b8;
+      }
+
+      .pv-square:hover .pv-square-bottom {
+        color: #334155;
+      }
+
+      .pv-square.copied .pv-square-bottom {
+        border-top-color: #065f46;
+        color: #6ee7b7;
+      }
+
+      .pv-copy-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-weight: 500;
+      }
+
+      .pv-square.copied .pv-copy-status {
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .pv-copy-count {
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* New Prompt Dashed Square */
+      .pv-square-new {
+        aspect-ratio: 1 / 1;
+        border-radius: 1rem;
+        border: 2px dashed #e2e8f0;
+        background: transparent;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.18s ease;
+      }
+
+      .pv-square-new:hover {
+        border-color: #0f172a;
+        background: rgba(255, 255, 255, 0.75);
+        color: #0f172a;
+      }
+
+      .pv-new-circle {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 9999px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.18s ease;
+      }
+
+      .pv-square-new:hover .pv-new-circle {
+        background: #0f172a;
+        color: #ffffff;
+      }
+
+      /* Modal */
+      .pv-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(2px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        overflow-y: auto;
+      }
+
+      .pv-modal {
+        width: 100%;
+        max-width: 36rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15);
+        overflow: hidden;
+      }
+
+      .pv-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .pv-modal-title {
+        font-family: var(--font-display);
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .pv-modal-sub {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-top: 0.15rem;
+      }
+
+      .pv-modal-body {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .pv-field-label-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.375rem;
+      }
+
+      .pv-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #334155;
+      }
+
+      .pv-textarea {
+        width: 100%;
+        padding: 0.75rem 0.875rem;
+        font-size: 0.875rem;
+        font-family: var(--font-mono);
+        background: #faf9f6;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        color: #0f172a;
+        line-height: 1.55;
+        resize: vertical;
+        outline: none;
+      }
+
+      .pv-textarea:focus {
+        background: #ffffff;
+        border-color: #0f172a;
+      }
+
+      .pv-input,
+      .pv-select {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        font-size: 0.875rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        color: #0f172a;
+        outline: none;
+      }
+
+      .pv-input:focus,
+      .pv-select:focus {
+        border-color: #0f172a;
+      }
+
+      .pv-modal-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      @media (min-width: 640px) {
+        .pv-modal-row {
+          grid-template-columns: 2fr 1fr;
+        }
+      }
+
+      .pv-autoname-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #1d4ed8;
+        background: #eff6ff;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+      }
+
+      .pv-autoname-btn:hover {
+        background: #dbeafe;
+      }
+
+      .pv-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+      }
+
+      .pv-toast {
+        position: fixed;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 0.65rem 1rem;
+        border-radius: 0.75rem;
+        background: #0f172a;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+        border: 1px solid #334155;
+      }
+
+      .pv-error-text {
+        font-size: 0.75rem;
+        color: #dc2626;
+        margin-top: 0.25rem;
+      }
+
+      @media (max-width: 640px) {
+        .pv-brand-sub {
+          display: none;
+        }
+        .pv-header-inner,
+        .pv-main {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+      }
+    </style>
+  <script src="/_aistudio-iframe.js?v=1f94f900"></script></head>
+  <body>
+    <div id="root"></div>
+
+    <script>
+      (function () {
+        const FIREBASE_CONFIG = {
+          projectId: 'arctic-purpose-4hl8x',
+          appId: '1:1021864896846:web:908605ee118fa30881d61f',
+          apiKey: 'AIzaSyD81jrXf178w27zDl06mYD4fMX7ts8mepI',
+          authDomain: 'arctic-purpose-4hl8x.firebaseapp.com',
+          firestoreDatabaseId: 'ai-studio-7710e02f-7704-4172-a482-780758352fe0',
+          storageBucket: 'arctic-purpose-4hl8x.firebasestorage.app',
+          messagingSenderId: '1021864896846',
+        };
+
+        const CATEGORIES = ['Coding', 'Writing', 'Analysis', 'System', 'Research', 'Creative'];
+        const CATEGORY_COLORS = {
+          Coding: '#2563eb',
+          Writing: '#d97706',
+          Analysis: '#059669',
+          System: '#1e293b',
+          Research: '#4f46e5',
+          Creative: '#e11d48',
+        };
+
+        const LOCAL_STORAGE_KEY = 'promptvault_local_prompts_v1';
+
+        const SEED_PROMPTS = [
+  {
+    "id": "seed_typescript_api_architect",
+    "title": "Type-Safe REST & RPC Endpoint Architect",
+    "description": "Designs production-ready TypeScript endpoints with strict input schema validation, idempotency handling, and structured error envelopes.",
+    "content": "Act as a Staff Backend Engineer. Design a production-ready {{framework}} endpoint for managing {{resource_name}}.\n\nRequirements:\n1. Define strict request body, query parameter, and response schemas using {{validation_library}}.\n2. Include explicit HTTP status codes and deterministic error envelopes for validation, authorization, and conflict edge cases.\n3. Enforce idempotency and rate-limiting boundaries suitable for {{traffic_tier}} load.\n4. Provide clean, copy-pasteable TypeScript implementation code with zero 'any' types.",
+    "category": "Coding",
+    "targetModel": "Gemini 2.5 Pro",
+    "collectionName": "Code Architecture",
+    "tags": [
+      "typescript",
+      "api-design",
+      "backend",
+      "validation"
+    ],
+    "isPinned": true,
+    "usageCount": 45,
+    "ownerId": "local_workspace",
+    "createdAtMs": 1761900000000,
+    "updatedAtMs": 1793678421282,
+    "source": "local"
+  },
+  {
+    "id": "seed_firestore_security_auditor",
+    "title": "Zero-Trust Firestore Security Rules Synthesizer",
+    "description": "Generates attribute-based access control (ABAC) Firestore rules with strict key allowlists, size bounds, and immutable timestamp checks.",
+    "content": "You are a Principal Cloud Security Architect specializing in Firebase Firestore Security Rules v2.\n\nGiven the collection path {{collection_path}} and entity fields {{entity_fields}}:\n1. Write a standalone isValid{{entity_name}}(data) validation helper that checks data.keys().hasAll(...) and data.keys().hasOnly(...).\n2. Enforce explicit .size() upper and lower bounds on every string and list field.\n3. Require request.auth.token.email_verified == true on all write operations.\n4. Ensure ownerId ({{owner_field}}) matches request.auth.uid on creation and remains immutable during updates.\n5. Partition allow update into explicit actions using incoming().diff(existing()).affectedKeys().hasOnly([...]).",
+    "category": "System",
+    "targetModel": "Gemini 2.5 Pro",
+    "collectionName": "Production Systems",
+    "tags": [
+      "firebase",
+      "firestore",
+      "security-rules",
+      "abac"
+    ],
+    "isPinned": true,
+    "usageCount": 31,
+    "ownerId": "local_workspace",
+    "createdAtMs": 1761920000000,
+    "updatedAtMs": 1762050000000,
+    "source": "local"
+  },
+  {
+    "id": "seed_sql_query_diagnostic",
+    "title": "PostgreSQL EXPLAIN ANALYZE Bottleneck Profiler",
+    "description": "Diagnoses high-cost sequential scans, index bloat, and join cardinality mismatches from PostgreSQL query execution plans.",
+    "content": "Analyze the following PostgreSQL query and EXPLAIN (ANALYZE, BUFFERS) output for table {{table_name}}:\n\nQuery:\n{{sql_query}}\n\nExecution Plan:\n{{explain_output}}\n\nProvide:\n1. The exact plan node causing the primary latency or buffer read bottleneck.\n2. Composite or partial B-Tree / GIN index DDL statements to eliminate sequential scans or sort spills.\n3. A rewritten query preserving identical semantics while reducing estimated I/O cost.",
+    "category": "Analysis",
+    "targetModel": "Claude 3.7 Sonnet",
+    "collectionName": "Code Architecture",
+    "tags": [
+      "postgresql",
+      "sql",
+      "performance",
+      "indexing"
+    ],
+    "isPinned": false,
+    "usageCount": 19,
+    "ownerId": "local_workspace",
+    "createdAtMs": 1761850000000,
+    "updatedAtMs": 1762010000000,
+    "source": "local"
+  },
+  {
+    "id": "seed_incident_postmortem",
+    "title": "Blameless Production Incident Postmortem Writer",
+    "description": "Transforms raw incident timeline notes into a structured engineering postmortem with root cause analysis and concrete remediation items.",
+    "content": "Convert the following raw incident log for {{service_name}} (Severity: {{severity_level}}) into a clear, blameless engineering postmortem.\n\nIncident Timeline & Notes:\n{{incident_notes}}\n\nStructure the output with:\n- Executive Summary (duration, customer impact metric, root trigger)\n- Minute-by-Minute UTC Timeline\n- Contributing Factors & Detection Gaps\n- Actionable Remediation Tasks (categorized into Immediate Mitigation vs. Long-Term Architectural Hardening)",
+    "category": "Writing",
+    "targetModel": "Gemini 2.5 Flash",
+    "collectionName": "Production Systems",
+    "tags": [
+      "sre",
+      "postmortem",
+      "incident-response",
+      "documentation"
+    ],
+    "isPinned": false,
+    "usageCount": 27,
+    "ownerId": "local_workspace",
+    "createdAtMs": 1761800000000,
+    "updatedAtMs": 1761990000000,
+    "source": "local"
+  },
+  {
+    "id": "seed_literature_synthesis",
+    "title": "Comparative Technical Paper & RFC Synthesis Matrix",
+    "description": "Extracts methodology trade-offs, empirical benchmarks, and failure modes across multiple technical papers or architecture RFCs.",
+    "content": "Synthesize a rigorous technical comparison on {{research_topic}} based on the following source material or constraints:\n\n{{source_excerpt}}\n\nEvaluate and compare across these dimensions:\n1. Core algorithmic or architectural mechanism\n2. Throughput, latency, or memory scaling trade-offs under {{workload_profile}}\n3. Known failure modes and operational complexity\n4. Recommendation matrix for when a team should adopt vs. avoid this approach.",
+    "category": "Research",
+    "targetModel": "Gemini 2.5 Pro",
+    "collectionName": "Research & Synthesis",
+    "tags": [
+      "research",
+      "rfc",
+      "benchmarks",
+      "architecture"
+    ],
+    "isPinned": false,
+    "usageCount": 15,
+    "ownerId": "local_workspace",
+    "createdAtMs": 1761750000000,
+    "updatedAtMs": 1761950000000,
+    "source": "local"
+  },
+  {
+    "id": "seed_product_release_copy",
+    "title": "Developer Changelog & Release Note Distiller",
+    "description": "Turns raw git commit histories and PR descriptions into crisp, developer-focused release notes with migration callouts.",
+    "content": "Write release notes for version {{release_version}} of {{product_name}} targeted at {{target_audience}}.\n\nRaw PRs & Commits:\n{{commit_list}}\n\nGuidelines:\n- Lead with the highest-impact workflow improvement and a concrete before/after example.\n- Group changes cleanly into New Capabilities, Performance Improvements, and Breaking Changes.\n- Avoid marketing fluff or superlatives; state exact technical behavior and upgrade steps.",
+    "category": "Writing",
+    "targetModel": "GPT-4o",
+    "collectionName": "Editorial & Copy",
+    "tags": [
+      "changelog",
+      "release-notes",
+      "developer-experience"
+    ],
+    "isPinned": false,
+    "usageCount": 23,
+    "ownerId": "local_workspace",
+    "createdAtMs": 1761700000000,
+    "updatedAtMs": 1761910000000,
+    "source": "local"
+  }
+];
+
+        // Load Local Prompts
+        function loadLocalPrompts() {
+          try {
+            const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+          } catch (_) {}
+          return SEED_PROMPTS.slice();
+        }
+
+        function saveLocalPrompts(list) {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          } catch (_) {}
+        }
+
+        // State
+        const state = {
+          user: null,
+          cloudPrompts: [],
+          localPrompts: loadLocalPrompts(),
+          searchQuery: '',
+          selectedCategory: 'All',
+          geminiReasons: null,
+          isSearching: false,
+          copiedId: null,
+          deletingId: null,
+          toast: null,
+          bannerError: null,
+          modalOpen: false,
+          editingPrompt: null,
+          formContent: '',
+          formTitle: '',
+          formCategory: 'Coding',
+          formPinned: false,
+          formError: '',
+          formNotice: '',
+          isNaming: false,
+          confirmModalDelete: false,
+          fbApi: null,
+          unsubscribeCloud: null,
+        };
+
+        function getActivePrompts() {
+          return state.user ? state.cloudPrompts : state.localPrompts;
+        }
+
+        function showToast(msg) {
+          state.toast = msg;
+          render();
+          setTimeout(() => {
+            if (state.toast === msg) {
+              state.toast = null;
+              render();
+            }
+          }, 2200);
+        }
+
+        function escapeHtml(str) {
+          return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        }
+
+        function filterPrompts() {
+          const prompts = getActivePrompts();
+          const q = state.searchQuery.trim().toLowerCase();
+
+          if (state.geminiReasons && q.length > 0) {
+            const matchedIds = Object.keys(state.geminiReasons);
+            const scoped = prompts
+              .filter(
+                (p) =>
+                  (state.selectedCategory === 'All' || p.category === state.selectedCategory) &&
+                  state.geminiReasons[p.id]
+              )
+              .sort((a, b) => state.geminiReasons[b.id].score - state.geminiReasons[a.id].score);
+            if (scoped.length > 0) return scoped;
+          }
+
+          const stopWords = new Set([
+            'help',
+            'me',
+            'the',
+            'and',
+            'for',
+            'with',
+            'how',
+            'to',
+            'in',
+            'of',
+            'a',
+            'an',
+            'find',
+            'prompt',
+            'prompts',
+            'that',
+            'can',
+          ]);
+
+          return prompts
+            .filter((p) => {
+              if (state.selectedCategory !== 'All' && p.category !== state.selectedCategory) {
+                return false;
+              }
+              if (q.length > 0) {
+                const hay = [
+                  p.title,
+                  p.description,
+                  p.content,
+                  p.category,
+                  ...(p.tags || []),
+                ]
+                  .join(' ')
+                  .toLowerCase();
+                if (!hay.includes(q)) {
+                  const tokens = q
+                    .split(/[^a-z0-9]+/i)
+                    .filter((t) => t.length >= 2 && !stopWords.has(t));
+                  if (tokens.length === 0 || !tokens.some((tok) => hay.includes(tok))) {
+                    return false;
+                  }
+                }
+              }
+              return true;
+            })
+            .sort((a, b) => {
+              if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
+                return a.isPinned ? -1 : 1;
+              }
+              return (b.updatedAtMs || 0) - (a.updatedAtMs || 0);
+            });
+        }
+
+        // Smart Auto-Name (uses server endpoint when available, or smart client heuristic on static GitHub Pages)
+        async function autoNamePrompt() {
+          const text = state.formContent.trim();
+          if (!text) {
+            state.formError = 'Paste or write your prompt text first so it can be named.';
+            render();
+            return;
+          }
+
+          state.isNaming = true;
+          state.formError = '';
+          state.formNotice = '';
+          render();
+
+          try {
+            const resp = await fetch('/api/gemini/name-prompt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: text }),
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data && data.title) {
+                state.formTitle = String(data.title).slice(0, 120);
+                if (CATEGORIES.includes(data.category)) {
+                  state.formCategory = data.category;
+                }
+                state.formNotice = 'Heading and category generated with Gemini.';
+                state.isNaming = false;
+                render();
+                return;
+              }
+            }
+          } catch (_) {
+            // Static host (GitHub Pages) fallback below
+          }
+
+          // Smart synthesis fallback for static GitHub Pages hosting
+          const lower = text.toLowerCase();
+          let guessedCategory = state.formCategory;
+          if (/(typescript|python|code|api|sql|react|endpoint|function|bug|test)/.test(lower)) {
+            guessedCategory = 'Coding';
+          } else if (/(security|firestore|cloud|system|docker|kubernetes|terraform)/.test(lower)) {
+            guessedCategory = 'System';
+          } else if (/(analyze|explain|bottleneck|profile|metrics|audit|diagnose)/.test(lower)) {
+            guessedCategory = 'Analysis';
+          } else if (/(research|paper|rfc|compare|synthesis|literature|study)/.test(lower)) {
+            guessedCategory = 'Research';
+          } else if (/(write|postmortem|changelog|release|blog|copy|email|essay)/.test(lower)) {
+            guessedCategory = 'Writing';
+          } else if (/(story|creative|brainstorm|design|concept)/.test(lower)) {
+            guessedCategory = 'Creative';
+          }
+
+          const firstLine = text
+            .split(/\n+/)[0]
+            .replace(/^(act as a|you are a|write a|design a|create a|analyze the)\s+/i, '')
+            .replace(/\{\{[^}]+\}\}/g, '')
+            .replace(/[^\w\s&-]/g, '')
+            .trim();
+
+          const words = firstLine.split(/\s+/).filter(Boolean).slice(0, 6);
+          const synthesizedTitle =
+            words.length > 0
+              ? words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+              : `${guessedCategory} Prompt Template`;
+
+          state.formTitle = synthesizedTitle.slice(0, 120);
+          state.formCategory = guessedCategory;
+          state.formNotice = 'Generated clean heading and category from prompt content.';
+          state.isNaming = false;
+          render();
+        }
+
+        // Semantic Search (uses server endpoint when available, or smart semantic scoring on static GitHub Pages)
+        async function runSemanticSearch() {
+          const q = state.searchQuery.trim();
+          const prompts = getActivePrompts();
+          if (!q || prompts.length === 0) return;
+
+          state.isSearching = true;
+          render();
+
+          try {
+            const resp = await fetch('/api/gemini/search-prompts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: q, prompts }),
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data && Array.isArray(data.matches)) {
+                const map = {};
+                data.matches.forEach((m) => {
+                  if (m && m.id && m.relevanceScore > 0) {
+                    map[m.id] = {
+                      score: m.relevanceScore,
+                      reason: m.matchReason || 'Matched by semantic intent',
+                    };
+                  }
+                });
+                state.geminiReasons = map;
+                state.isSearching = false;
+                render();
+                return;
+              }
+            }
+          } catch (_) {}
+
+          // Client-side semantic intent matcher for static GitHub Pages
+          const tokens = q
+            .toLowerCase()
+            .split(/[^a-z0-9]+/i)
+            .filter((t) => t.length >= 2);
+          const map = {};
+          prompts.forEach((p) => {
+            const hay = [p.title, p.description, p.content, p.category, ...(p.tags || [])]
+              .join(' ')
+              .toLowerCase();
+            let score = 0;
+            const matched = [];
+            tokens.forEach((tok) => {
+              if (hay.includes(tok)) {
+                score += p.title.toLowerCase().includes(tok) ? 35 : 20;
+                matched.push(tok);
+              }
+            });
+            if (score > 0) {
+              map[p.id] = {
+                score: Math.min(100, score),
+                reason: `Matches intent keywords: ${matched.slice(0, 4).join(', ')}`,
+              };
+            }
+          });
+          state.geminiReasons = map;
+          state.isSearching = false;
+          render();
+        }
+
+        // Copy Square Prompt
+        async function copyPromptSquare(promptId) {
+          const prompt = getActivePrompts().find((p) => p.id === promptId);
+          if (!prompt) return;
+
+          try {
+            await navigator.clipboard.writeText(prompt.content);
+          } catch (_) {
+            const ta = document.createElement('textarea');
+            ta.value = prompt.content;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+
+          state.copiedId = prompt.id;
+          showToast(`Copied "${prompt.title}" to clipboard`);
+          setTimeout(() => {
+            if (state.copiedId === prompt.id) {
+              state.copiedId = null;
+              render();
+            }
+          }, 2000);
+
+          if (state.user && state.fbApi) {
+            try {
+              await state.fbApi.incrementUsage(prompt.id, prompt.usageCount || 0);
+            } catch (_) {}
+          } else {
+            state.localPrompts = state.localPrompts.map((p) =>
+              p.id === prompt.id
+                ? { ...p, usageCount: (p.usageCount || 0) + 1, updatedAtMs: Date.now() }
+                : p
+            );
+            saveLocalPrompts(state.localPrompts);
+            render();
+          }
+        }
+
+        // Toggle Pin
+        async function togglePin(promptId) {
+          const prompt = getActivePrompts().find((p) => p.id === promptId);
+          if (!prompt) return;
+
+          if (state.user && state.fbApi) {
+            await state.fbApi.togglePin(prompt.id, !prompt.isPinned);
+          } else {
+            state.localPrompts = state.localPrompts.map((p) =>
+              p.id === prompt.id ? { ...p, isPinned: !p.isPinned } : p
+            );
+            saveLocalPrompts(state.localPrompts);
+            render();
+          }
+        }
+
+        // Delete Prompt
+        async function deletePrompt(promptId) {
+          const target = getActivePrompts().find((p) => p.id === promptId);
+          state.deletingId = null;
+          if (state.user && state.fbApi) {
+            await state.fbApi.deletePrompt(promptId);
+          } else {
+            state.localPrompts = state.localPrompts.filter((p) => p.id !== promptId);
+            saveLocalPrompts(state.localPrompts);
+          }
+          if (target) {
+            showToast(`Deleted "${target.title}"`);
+          } else {
+            render();
+          }
+        }
+
+        // Save Prompt from Modal
+        async function saveModalPrompt() {
+          const title = state.formTitle.trim();
+          const content = state.formContent.trim();
+          if (!content) {
+            state.formError = 'Prompt text is required.';
+            render();
+            return;
+          }
+          if (!title) {
+            state.formError = 'Square heading is required (or click Auto-Name with Gemini).';
+            render();
+            return;
+          }
+
+          const category = CATEGORIES.includes(state.formCategory) ? state.formCategory : 'Coding';
+          const isPinned = Boolean(state.formPinned);
+
+          if (state.user && state.fbApi) {
+            if (state.editingPrompt) {
+              await state.fbApi.updatePrompt(state.editingPrompt.id, {
+                title,
+                content,
+                category,
+                isPinned,
+                description: state.editingPrompt.description || '',
+                targetModel: state.editingPrompt.targetModel || 'Gemini 2.5 Pro',
+                collectionName: state.editingPrompt.collectionName || 'Core Library',
+                tags: state.editingPrompt.tags || [],
+              });
+            } else {
+              await state.fbApi.createPrompt(state.user.uid, {
+                title,
+                content,
+                category,
+                isPinned,
+              });
+            }
+          } else {
+            const now = Date.now();
+            if (state.editingPrompt) {
+              state.localPrompts = state.localPrompts.map((p) =>
+                p.id === state.editingPrompt.id
+                  ? { ...p, title, content, category, isPinned, updatedAtMs: now }
+                  : p
+              );
+            } else {
+              state.localPrompts = [
+                {
+                  id: 'local_' + now,
+                  title,
+                  description: '',
+                  content,
+                  category,
+                  targetModel: 'Gemini 2.5 Pro',
+                  collectionName: 'Core Library',
+                  tags: [],
+                  isPinned,
+                  usageCount: 0,
+                  ownerId: 'local_workspace',
+                  createdAtMs: now,
+                  updatedAtMs: now,
+                },
+                ...state.localPrompts,
+              ];
+            }
+            saveLocalPrompts(state.localPrompts);
+          }
+
+          const wasEditing = Boolean(state.editingPrompt);
+          state.modalOpen = false;
+          state.editingPrompt = null;
+          showToast(wasEditing ? `Updated "${title}"` : `Created "${title}"`);
+        }
+
+        // Initialize Firebase via official gstatic ESM CDN
+        async function initFirebase() {
+          try {
+            const [appMod, authMod, fsMod] = await Promise.all([
+              import('https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js'),
+              import('https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js'),
+              import('https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js'),
+            ]);
+
+            const app = appMod.initializeApp(FIREBASE_CONFIG);
+            const auth = authMod.getAuth(app);
+            const db = fsMod.getFirestore(app, FIREBASE_CONFIG.firestoreDatabaseId);
+            const provider = new authMod.GoogleAuthProvider();
+
+            state.fbApi = {
+              signIn: () => authMod.signInWithPopup(auth, provider),
+              signOut: () => authMod.signOut(auth),
+              createPrompt: async (uid, data) => {
+                const id = 'prm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                await fsMod.setDoc(fsMod.doc(db, 'prompts', id), {
+                  title: data.title.slice(0, 120),
+                  description: '',
+                  content: data.content.slice(0, 10000),
+                  category: data.category,
+                  targetModel: 'Gemini 2.5 Pro',
+                  collectionName: 'Core Library',
+                  tags: [],
+                  isPinned: Boolean(data.isPinned),
+                  usageCount: 0,
+                  ownerId: uid,
+                  createdAt: fsMod.serverTimestamp(),
+                  updatedAt: fsMod.serverTimestamp(),
+                });
+              },
+              updatePrompt: async (id, data) => {
+                await fsMod.updateDoc(fsMod.doc(db, 'prompts', id), {
+                  title: data.title.slice(0, 120),
+                  description: data.description || '',
+                  content: data.content.slice(0, 10000),
+                  category: data.category,
+                  targetModel: data.targetModel || 'Gemini 2.5 Pro',
+                  collectionName: data.collectionName || 'Core Library',
+                  tags: Array.isArray(data.tags) ? data.tags : [],
+                  isPinned: Boolean(data.isPinned),
+                  updatedAt: fsMod.serverTimestamp(),
+                });
+              },
+              togglePin: async (id, isPinned) => {
+                await fsMod.updateDoc(fsMod.doc(db, 'prompts', id), {
+                  isPinned: Boolean(isPinned),
+                  updatedAt: fsMod.serverTimestamp(),
+                });
+              },
+              incrementUsage: async (id, current) => {
+                await fsMod.updateDoc(fsMod.doc(db, 'prompts', id), {
+                  usageCount: current + 1,
+                  updatedAt: fsMod.serverTimestamp(),
+                });
+              },
+              deletePrompt: async (id) => {
+                await fsMod.deleteDoc(fsMod.doc(db, 'prompts', id));
+              },
+            };
+
+            authMod.onAuthStateChanged(auth, (user) => {
+              state.user = user || null;
+              if (state.unsubscribeCloud) {
+                state.unsubscribeCloud();
+                state.unsubscribeCloud = null;
+              }
+              if (user) {
+                const q = fsMod.query(
+                  fsMod.collection(db, 'prompts'),
+                  fsMod.where('ownerId', '==', user.uid)
+                );
+                state.unsubscribeCloud = fsMod.onSnapshot(q, (snap) => {
+                  state.cloudPrompts = snap.docs.map((d) => {
+                    const data = d.data();
+                    return {
+                      id: d.id,
+                      title: String(data.title || ''),
+                      description: String(data.description || ''),
+                      content: String(data.content || ''),
+                      category: data.category || 'Coding',
+                      targetModel: String(data.targetModel || 'Gemini 2.5 Pro'),
+                      collectionName: String(data.collectionName || 'Core Library'),
+                      tags: Array.isArray(data.tags) ? data.tags : [],
+                      isPinned: Boolean(data.isPinned),
+                      usageCount: typeof data.usageCount === 'number' ? data.usageCount : 0,
+                      ownerId: String(data.ownerId || user.uid),
+                      createdAtMs: data.createdAt?.seconds ? data.createdAt.seconds * 1000 : Date.now(),
+                      updatedAtMs: data.updatedAt?.seconds ? data.updatedAt.seconds * 1000 : Date.now(),
+                    };
+                  });
+                  render();
+                });
+              } else {
+                state.cloudPrompts = [];
+              }
+              render();
+            });
+          } catch (_) {
+            // Works offline/locally with LocalStorage if CDN is unreachable
+          }
+        }
+
+        function render() {
+          const root = document.getElementById('root');
+          if (!root) return;
+
+          const filtered = filterPrompts();
+
+          root.innerHTML = `
+            <div class="pv-app">
+              <header class="pv-header">
+                <div class="pv-header-inner">
+                  <div class="pv-brand">
+                    <div class="pv-logo">PV</div>
+                    <div>
+                      <span class="pv-brand-title">PromptVault</span>
+                      <span class="pv-brand-sub">Click any square to copy prompt</span>
+                    </div>
+                  </div>
+                  <div class="pv-header-actions">
+                    ${
+                      state.user
+                        ? `
+                          <span class="pv-sync-badge">Firebase Synced</span>
+                          <button type="button" id="pv-signout-btn" class="pv-btn pv-btn-outline">Sign Out</button>
+                        `
+                        : `
+                          <button type="button" id="pv-signin-btn" class="pv-btn pv-btn-outline">Sync with Firebase</button>
+                        `
+                    }
+                    <button type="button" id="pv-new-btn" class="pv-btn pv-btn-primary">+ New Prompt</button>
+                  </div>
+                </div>
+              </header>
+
+              <main class="pv-main">
+                <section class="pv-search-section">
+                  <form id="pv-search-form" class="pv-search-box">
+                    <span class="pv-search-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </span>
+                    <input
+                      type="text"
+                      id="pv-search-input"
+                      class="pv-search-input"
+                      placeholder="Search headings, keywords, or describe what you need..."
+                      value="${escapeHtml(state.searchQuery)}"
+                      aria-label="Search prompts"
+                    />
+                    ${
+                      state.searchQuery
+                        ? `<button type="button" id="pv-clear-search" class="pv-clear-btn" aria-label="Clear search">✕</button>`
+                        : ''
+                    }
+                    <button
+                      type="submit"
+                      class="pv-gemini-btn"
+                      ${!state.searchQuery.trim() || state.isSearching ? 'disabled' : ''}
+                    >
+                      ✨ ${state.isSearching ? 'Searching...' : 'Gemini Search'}
+                    </button>
+                  </form>
+
+                  <div class="pv-filter-bar">
+                    <div class="pv-categories">
+                      ${['All', ...CATEGORIES]
+                        .map(
+                          (cat) => `
+                            <button
+                              type="button"
+                              data-cat="${cat}"
+                              class="pv-cat-btn ${state.selectedCategory === cat ? 'active' : ''}"
+                            >${cat}</button>
+                          `
+                        )
+                        .join('')}
+                    </div>
+                    <div class="pv-square-count">${filtered.length} ${
+            filtered.length === 1 ? 'square' : 'squares'
+          }</div>
+                  </div>
+
+                  ${
+                    state.geminiReasons
+                      ? `
+                        <div class="pv-banner pv-banner-info">
+                          <span>✨ Ranked by <strong>Gemini Semantic Search</strong> (${
+                            Object.keys(state.geminiReasons).length
+                          } matches)</span>
+                          <button type="button" id="pv-reset-gemini" style="background:none;border:none;color:#1d4ed8;font-weight:600;cursor:pointer;text-decoration:underline;">Reset</button>
+                        </div>
+                      `
+                      : ''
+                  }
+
+                  ${
+                    state.bannerError
+                      ? `
+                        <div class="pv-banner pv-banner-warn">
+                          <span>${escapeHtml(state.bannerError)}</span>
+                          <button type="button" id="pv-dismiss-err" style="background:none;border:none;color:#78350f;font-weight:600;cursor:pointer;">Dismiss</button>
+                        </div>
+                      `
+                      : ''
+                  }
+                </section>
+
+                <div class="pv-grid">
+                  ${filtered
+                    .map((p) => {
+                      const isCopied = state.copiedId === p.id;
+                      const isConfirmDel = state.deletingId === p.id;
+                      const dotColor = isCopied
+                        ? '#34d399'
+                        : CATEGORY_COLORS[p.category] || '#2563eb';
+                      const reasonObj = state.geminiReasons && state.geminiReasons[p.id];
+
+                      return `
+                        <div
+                          class="pv-square ${isCopied ? 'copied' : ''}"
+                          data-copy-id="${escapeHtml(p.id)}"
+                          role="button"
+                          tabindex="0"
+                          aria-label="Copy prompt: ${escapeHtml(p.title)}"
+                        >
+                          <div class="pv-square-top">
+                            <div class="pv-square-meta">
+                              <span class="pv-dot" style="background:${dotColor}"></span>
+                              <span class="pv-cat-label">${escapeHtml(p.category)}</span>
+                              ${
+                                p.isPinned
+                                  ? `<span class="pv-pinned-label">· Pinned</span>`
+                                  : ''
+                              }
+                            </div>
+
+                            <div class="pv-square-actions" data-stop-prop="1">
+                              ${
+                                isConfirmDel
+                                  ? `
+                                    <div class="pv-confirm-pill">
+                                      <button type="button" class="pv-confirm-del-btn" data-confirm-del="${escapeHtml(
+                                        p.id
+                                      )}">Delete</button>
+                                      <button type="button" class="pv-confirm-cancel-btn" data-cancel-del="1">✕</button>
+                                    </div>
+                                  `
+                                  : `
+                                    <button
+                                      type="button"
+                                      class="pv-icon-btn ${p.isPinned ? 'pinned' : ''}"
+                                      data-pin-id="${escapeHtml(p.id)}"
+                                      title="${p.isPinned ? 'Unpin square' : 'Pin square'}"
+                                      aria-label="${p.isPinned ? 'Unpin' : 'Pin'} ${escapeHtml(
+                                      p.title
+                                    )}"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="pv-icon-btn"
+                                      data-edit-id="${escapeHtml(p.id)}"
+                                      title="Edit prompt"
+                                      aria-label="Edit ${escapeHtml(p.title)}"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="pv-icon-btn delete"
+                                      data-ask-del="${escapeHtml(p.id)}"
+                                      title="Delete prompt"
+                                      aria-label="Delete ${escapeHtml(p.title)}"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                    </button>
+                                  `
+                              }
+                            </div>
+                          </div>
+
+                          <div class="pv-square-center">
+                            <h2 class="pv-square-heading">${escapeHtml(p.title)}</h2>
+                            ${
+                              reasonObj
+                                ? `<p class="pv-square-reason">✨ ${escapeHtml(reasonObj.reason)}</p>`
+                                : `<p class="pv-square-preview">${escapeHtml(p.content)}</p>`
+                            }
+                          </div>
+
+                          <div class="pv-square-bottom">
+                            <span class="pv-copy-status">
+                              ${
+                                isCopied
+                                  ? `✓ Copied prompt!`
+                                  : `⧉ Click to copy`
+                              }
+                            </span>
+                            <span class="pv-copy-count">${p.usageCount || 0} ${
+                        (p.usageCount || 0) === 1 ? 'copy' : 'copies'
+                      }</span>
+                          </div>
+                        </div>
+                      `;
+                    })
+                    .join('')}
+
+                  <button type="button" id="pv-new-tile" class="pv-square-new">
+                    <div class="pv-new-circle">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    </div>
+                    <div style="text-align:center;">
+                      <strong style="display:block;font-family:var(--font-display);font-size:0.875rem;color:#334155;">New Prompt Square</strong>
+                      <span style="display:block;font-size:0.75rem;color:#94a3b8;margin-top:0.2rem;">Auto-name with Gemini</span>
+                    </div>
+                  </button>
+                </div>
+              </main>
+
+              ${
+                state.toast
+                  ? `
+                    <div class="pv-toast" role="status" aria-live="polite">
+                      <span style="color:#34d399;">✓</span>
+                      <span>${escapeHtml(state.toast)}</span>
+                    </div>
+                  `
+                  : ''
+              }
+
+              ${
+                state.modalOpen
+                  ? `
+                    <div class="pv-modal-backdrop" id="pv-modal-backdrop" role="dialog" aria-modal="true">
+                      <div class="pv-modal" id="pv-modal-card">
+                        <div class="pv-modal-header">
+                          <div>
+                            <h2 class="pv-modal-title">${
+                              state.editingPrompt ? 'Edit Prompt Square' : 'New Prompt Square'
+                            }</h2>
+                            <p class="pv-modal-sub">${
+                              state.editingPrompt
+                                ? 'Update your prompt heading, category, or full prompt text.'
+                                : 'Paste your prompt and let Gemini generate a clean heading.'
+                            }</p>
+                          </div>
+                          <button type="button" id="pv-modal-close" class="pv-icon-btn" aria-label="Close">✕</button>
+                        </div>
+
+                        <form id="pv-modal-form" class="pv-modal-body">
+                          ${
+                            state.formError
+                              ? `<div class="pv-banner pv-banner-warn" style="margin-top:0;">${escapeHtml(
+                                  state.formError
+                                )}</div>`
+                              : ''
+                          }
+                          ${
+                            state.formNotice
+                              ? `<div class="pv-banner pv-banner-info" style="margin-top:0;">✓ ${escapeHtml(
+                                  state.formNotice
+                                )}</div>`
+                              : ''
+                          }
+
+                          <div>
+                            <div class="pv-field-label-row">
+                              <label class="pv-label" for="pv-form-content">Prompt Text *</label>
+                            </div>
+                            <textarea
+                              id="pv-form-content"
+                              class="pv-textarea"
+                              rows="7"
+                              placeholder="Paste or type the full prompt that will be copied when you click this square..."
+                            >${escapeHtml(state.formContent)}</textarea>
+                          </div>
+
+                          <div class="pv-modal-row">
+                            <div>
+                              <div class="pv-field-label-row">
+                                <label class="pv-label" for="pv-form-title">Square Heading *</label>
+                                <button type="button" id="pv-autoname-btn" class="pv-autoname-btn">
+                                  ✨ ${state.isNaming ? 'Naming...' : 'Auto-Name with Gemini'}
+                                </button>
+                              </div>
+                              <input
+                                id="pv-form-title"
+                                type="text"
+                                class="pv-input"
+                                placeholder="e.g. TypeScript API Endpoint Architect"
+                                value="${escapeHtml(state.formTitle)}"
+                              />
+                            </div>
+
+                            <div>
+                              <div class="pv-field-label-row">
+                                <label class="pv-label" for="pv-form-category">Category</label>
+                              </div>
+                              <select id="pv-form-category" class="pv-select">
+                                ${CATEGORIES.map(
+                                  (cat) => `
+                                    <option value="${cat}" ${
+                                    state.formCategory === cat ? 'selected' : ''
+                                  }>${cat}</option>
+                                  `
+                                ).join('')}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label style="display:inline-flex;align-items:center;gap:0.5rem;font-size:0.75rem;color:#475569;cursor:pointer;">
+                              <input type="checkbox" id="pv-form-pinned" ${
+                                state.formPinned ? 'checked' : ''
+                              } />
+                              <span>Pin this square to the top of the grid</span>
+                            </label>
+                          </div>
+
+                          <div class="pv-modal-footer">
+                            <div>
+                              ${
+                                state.editingPrompt
+                                  ? `
+                                    <button
+                                      type="button"
+                                      id="pv-modal-delete"
+                                      class="pv-btn"
+                                      style="background:${
+                                        state.confirmModalDelete ? '#dc2626' : '#fef2f2'
+                                      };color:${
+                                      state.confirmModalDelete ? '#ffffff' : '#dc2626'
+                                    };"
+                                    >
+                                      ${
+                                        state.confirmModalDelete
+                                          ? 'Confirm Delete'
+                                          : 'Delete Prompt'
+                                      }
+                                    </button>
+                                  `
+                                  : ''
+                              }
+                            </div>
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                              <button type="button" id="pv-modal-cancel" class="pv-btn pv-btn-outline">Cancel</button>
+                              <button type="submit" class="pv-btn pv-btn-primary">
+                                ${state.editingPrompt ? 'Save Changes' : 'Create Square'}
+                              </button>
+                            </div>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  `
+                  : ''
+              }
+            </div>
+          `;
+
+          attachEvents();
+        }
+
+        function openCreateModal() {
+          state.editingPrompt = null;
+          state.formContent = '';
+          state.formTitle = '';
+          state.formCategory = 'Coding';
+          state.formPinned = false;
+          state.formError = '';
+          state.formNotice = '';
+          state.confirmModalDelete = false;
+          state.modalOpen = true;
+          render();
+        }
+
+        function openEditModal(promptId) {
+          const prompt = getActivePrompts().find((p) => p.id === promptId);
+          if (!prompt) return;
+          state.editingPrompt = prompt;
+          state.formContent = prompt.content;
+          state.formTitle = prompt.title;
+          state.formCategory = prompt.category || 'Coding';
+          state.formPinned = Boolean(prompt.isPinned);
+          state.formError = '';
+          state.formNotice = '';
+          state.confirmModalDelete = false;
+          state.modalOpen = true;
+          render();
+        }
+
+        function attachEvents() {
+          const signinBtn = document.getElementById('pv-signin-btn');
+          if (signinBtn) {
+            signinBtn.onclick = async () => {
+              if (!state.fbApi) {
+                state.bannerError = 'Firebase Auth is initializing. Local workspace is active.';
+                render();
+                return;
+              }
+              try {
+                await state.fbApi.signIn();
+              } catch (_) {
+                state.bannerError =
+                  'Sign-in popup was closed or domain is not authorized yet in Firebase Console. Local prompts remain available.';
+                render();
+              }
+            };
+          }
+
+          const signoutBtn = document.getElementById('pv-signout-btn');
+          if (signoutBtn) {
+            signoutBtn.onclick = () => state.fbApi && state.fbApi.signOut();
+          }
+
+          const newBtn = document.getElementById('pv-new-btn');
+          if (newBtn) newBtn.onclick = openCreateModal;
+
+          const newTile = document.getElementById('pv-new-tile');
+          if (newTile) newTile.onclick = openCreateModal;
+
+          const searchInput = document.getElementById('pv-search-input');
+          if (searchInput) {
+            searchInput.oninput = (e) => {
+              state.searchQuery = e.target.value;
+              if (!state.searchQuery.trim()) state.geminiReasons = null;
+              const cursorPos = e.target.selectionStart;
+              render();
+              const nextInput = document.getElementById('pv-search-input');
+              if (nextInput) {
+                nextInput.focus();
+                nextInput.setSelectionRange(cursorPos, cursorPos);
+              }
+            };
+          }
+
+          const clearBtn = document.getElementById('pv-clear-search');
+          if (clearBtn) {
+            clearBtn.onclick = () => {
+              state.searchQuery = '';
+              state.geminiReasons = null;
+              render();
+            };
+          }
+
+          const searchForm = document.getElementById('pv-search-form');
+          if (searchForm) {
+            searchForm.onsubmit = (e) => {
+              e.preventDefault();
+              runSemanticSearch();
+            };
+          }
+
+          const resetGemini = document.getElementById('pv-reset-gemini');
+          if (resetGemini) {
+            resetGemini.onclick = () => {
+              state.geminiReasons = null;
+              render();
+            };
+          }
+
+          const dismissErr = document.getElementById('pv-dismiss-err');
+          if (dismissErr) {
+            dismissErr.onclick = () => {
+              state.bannerError = null;
+              render();
+            };
+          }
+
+          document.querySelectorAll('[data-cat]').forEach((btn) => {
+            btn.onclick = () => {
+              state.selectedCategory = btn.getAttribute('data-cat');
+              render();
+            };
+          });
+
+          document.querySelectorAll('[data-copy-id]').forEach((sq) => {
+            sq.onclick = (e) => {
+              if (e.target.closest('[data-stop-prop]')) return;
+              copyPromptSquare(sq.getAttribute('data-copy-id'));
+            };
+          });
+
+          document.querySelectorAll('[data-pin-id]').forEach((btn) => {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              togglePin(btn.getAttribute('data-pin-id'));
+            };
+          });
+
+          document.querySelectorAll('[data-edit-id]').forEach((btn) => {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              openEditModal(btn.getAttribute('data-edit-id'));
+            };
+          });
+
+          document.querySelectorAll('[data-ask-del]').forEach((btn) => {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              state.deletingId = btn.getAttribute('data-ask-del');
+              render();
+            };
+          });
+
+          document.querySelectorAll('[data-confirm-del]').forEach((btn) => {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              deletePrompt(btn.getAttribute('data-confirm-del'));
+            };
+          });
+
+          document.querySelectorAll('[data-cancel-del]').forEach((btn) => {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              state.deletingId = null;
+              render();
+            };
+          });
+
+          if (state.modalOpen) {
+            const syncFormFields = () => {
+              const c = document.getElementById('pv-form-content');
+              const t = document.getElementById('pv-form-title');
+              const cat = document.getElementById('pv-form-category');
+              const pin = document.getElementById('pv-form-pinned');
+              if (c) state.formContent = c.value;
+              if (t) state.formTitle = t.value;
+              if (cat) state.formCategory = cat.value;
+              if (pin) state.formPinned = pin.checked;
+            };
+
+            ['pv-form-content', 'pv-form-title', 'pv-form-category', 'pv-form-pinned'].forEach(
+              (id) => {
+                const el = document.getElementById(id);
+                if (el) el.oninput = syncFormFields;
+                if (el) el.onchange = syncFormFields;
+              }
+            );
+
+            const closeBtn = document.getElementById('pv-modal-close');
+            const cancelBtn = document.getElementById('pv-modal-cancel');
+            const backdrop = document.getElementById('pv-modal-backdrop');
+            const card = document.getElementById('pv-modal-card');
+
+            if (closeBtn) closeBtn.onclick = () => ((state.modalOpen = false), render());
+            if (cancelBtn) cancelBtn.onclick = () => ((state.modalOpen = false), render());
+            if (backdrop) backdrop.onclick = () => ((state.modalOpen = false), render());
+            if (card) card.onclick = (e) => e.stopPropagation();
+
+            const autoBtn = document.getElementById('pv-autoname-btn');
+            if (autoBtn) {
+              autoBtn.onclick = () => {
+                syncFormFields();
+                autoNamePrompt();
+              };
+            }
+
+            const modalDel = document.getElementById('pv-modal-delete');
+            if (modalDel) {
+              modalDel.onclick = async () => {
+                if (!state.confirmModalDelete) {
+                  state.confirmModalDelete = true;
+                  render();
+                  return;
+                }
+                const id = state.editingPrompt.id;
+                state.modalOpen = false;
+                state.editingPrompt = null;
+                await deletePrompt(id);
+              };
+            }
+
+            const modalForm = document.getElementById('pv-modal-form');
+            if (modalForm) {
+              modalForm.onsubmit = (e) => {
+                e.preventDefault();
+                syncFormFields();
+                saveModalPrompt();
+              };
+            }
+          }
+        }
+
+        render();
+        initFirebase();
+      })();
+    </script>
+  </body>
+</html>
